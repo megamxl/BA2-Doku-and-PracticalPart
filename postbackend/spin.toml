@@ -1,0 +1,18 @@
+spin_manifest_version = 2
+
+[application]
+name = "postbackend"
+version = "0.1.0"
+authors = ["Maxl <maximilian.nowak@outlook.at>"]
+description = "post-backend"
+
+[[trigger.http]]
+route = "/..."
+component = "postbackend"
+
+[component.postbackend]
+source = "main.wasm"
+allowed_outbound_hosts = ["redis://127.0.01:6379", "redis://localhost:6379", "postgres://127.0.0.1:5432", "postgres://localhost:5432"]
+[component.postbackend.build]
+command = "tinygo build -target=wasi -gc=leaking -no-debug -o main.wasm main.go"
+watch = ["**/*.go", "go.mod"]

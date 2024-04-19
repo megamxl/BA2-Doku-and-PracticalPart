@@ -1,0 +1,7 @@
+{
+    "sender": "John Doe",
+    "recipient": "Jane Smith",
+    "originAddress": "1234 West Elm St, Springfield, IL",
+    "destinationAddress": "5678 East Oak St, Lincoln, NE",
+    "weight": 2
+}
