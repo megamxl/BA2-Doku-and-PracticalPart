@@ -6,5 +6,3 @@ node_modules
 
 *.wasm
 .spin/
-
-go.sum
