@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
-	"github.com/fermyon/spin/sdk/go/v2/pg"
-	reddis "github.com/fermyon/spin/sdk/go/v2/redis"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
+
+	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
+	"github.com/fermyon/spin/sdk/go/v2/pg"
+	reddis "github.com/fermyon/spin/sdk/go/v2/redis"
 )
 
 type Package struct {
@@ -48,12 +49,12 @@ func init() {
 
 	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
 
-		addr := "postgresql://exampleuser:examplepass@localhost:5432/exampledb"
+		addr := "postgresql://exampleuser:examplepass@192.168.178.109:5432/exampledb"
 
 		db := pg.Open(addr)
 		defer db.Close()
 
-		red := reddis.NewClient("redis://localhost:6379")
+		red := reddis.NewClient("redis://192.168.178.109:6379/0")
 
 		if r.Method == "GET" {
 			selectByID(*db, w, r)

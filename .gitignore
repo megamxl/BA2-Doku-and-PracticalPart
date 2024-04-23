@@ -1,3 +1,10 @@
 /postbackend/.idea
 
-/.idea
+.idea
+
+node_modules
+
+*.wasm
+.spin/
+
+go.sum
