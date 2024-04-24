@@ -12,26 +12,9 @@ import (
 	"net/http"
 )
 
-type album struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Artist string  `json:"artist"`
-	Price  float64 `json:"price"`
-}
-
-var albums = []album{
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-}
-
-func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
-}
-
 func main() {
 
-	endpoint := "192.168.76.198:9000"
+	endpoint := "localhost:9000"
 	accessKeyID := "minioadmin"
 	secretAccessKey := "minioadmin"
 
@@ -44,7 +27,6 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.GET("/albums", getAlbums)
 
 	router.GET("/getObject", func(c *gin.Context) {
 		getFromBucketWithKey(c, minioClient)
@@ -52,6 +34,10 @@ func main() {
 
 	router.POST("/putObject", func(c *gin.Context) {
 		putObjectWithBucketWithKey(c, minioClient)
+	})
+
+	router.GET("/getFilesFromBucketWitPrefix", func(c *gin.Context) {
+		getFilesInBucketByPrefix(c, minioClient)
 	})
 
 	router.Run("localhost:8085")
@@ -148,4 +134,60 @@ func putObjectWithBucketWithKey(c *gin.Context, minioClient *minio.Client) {
 		"message": "Object successfully uploaded",
 	})
 
+}
+
+func getFilesInBucketByPrefix(c *gin.Context, minioClient *minio.Client) {
+
+	bucketName := c.Query("bucketName")
+	key := c.Query("key")
+	formatJson := c.Query("formatJson")
+
+	if bucketName == "" {
+		// If any of the parameters are missing, return HTTP 500 with an error message
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Both 'bucketName' and 'key' must be provided.",
+		})
+		return
+	}
+
+	objectCh := minioClient.ListObjects(context.Background(), bucketName, minio.ListObjectsOptions{
+		Prefix:    key,
+		Recursive: true,
+	})
+
+	var data []interface{}
+
+	for object := range objectCh {
+		if object.Err != nil {
+			log.Println(object.Err)
+			continue // Skip this object and move to the next
+		}
+
+		// Retrieve the object data.
+		objectData, err := minioClient.GetObject(context.Background(), bucketName, object.Key, minio.GetObjectOptions{})
+		if err != nil {
+			log.Println(err)
+			continue // Skip this object and move to the next
+		}
+
+		rawData, err := ioutil.ReadAll(objectData)
+		if err != nil {
+			log.Println(err)
+			continue // Skip this object and move to the next
+		}
+
+		if formatJson == "true" {
+			var parsedData map[string]interface{}
+			if json.Unmarshal(rawData, &parsedData) == nil {
+				data = append(data, parsedData)
+			} else {
+				log.Println("Failed to parse JSON:", err)
+				continue // If JSON parsing fails, skip this object
+			}
+		} else {
+			data = append(data, string(rawData))
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": data})
 }

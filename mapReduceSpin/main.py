@@ -58,7 +58,7 @@ def reDoingRequests(req):
 
 input_bucket = parsed_config['bucket-prefix'] + "-input"
 
-#client.make_bucket(bucket_name=input_bucket)
+client.make_bucket(bucket_name=input_bucket)
 
 usedkeys = []
 failed_req = []
@@ -96,7 +96,7 @@ print("depolyed mapper")
 
 intermidated_buket = parsed_config['bucket-prefix'] + "-intermidated"
 
-#client.make_bucket(bucket_name=intermidated_buket)
+client.make_bucket(bucket_name=intermidated_buket)
 
 threads = []
 print(f"Doing {len(usedkeys)} mapper calls ")
@@ -117,7 +117,7 @@ for idx, key_1 in enumerate(usedkeys):
         threads.clear()
         print("")
 
-    thread = threading.Thread(target=invoke_a_function, args=(parsed_config['gateway-Ip'], parsed_config['gateway-Port'], mapper_function_name, data,))
+    thread = threading.Thread(target=invoke_a_function, args=(parsed_config['gateway-Ip'], 3001, mapper_function_name, data,))
     threads.append(thread)
 
 for thread in threads:
@@ -130,9 +130,6 @@ for thread in threads:
 threads.clear()
 
 print(f"there were {len(failed_req)} failed request doing them again")
-
-raise Exception("Intended")
-
 
 if len(failed_req) != 0:
     reDoingRequests(failed_req)
@@ -151,7 +148,7 @@ intermediatekeys = []
 
 reducer_function_name = parsed_config['bucket-prefix'] + "-reducer"
 
-deploy_a_function(parsed_config['gateway-Ip'], parsed_config['gateway-Port'], reducer_function_name, parsed_config['reduceFunction'])
+#deploy_a_function(parsed_config['gateway-Ip'], parsed_config['gateway-Port'], reducer_function_name, parsed_config['reduceFunction'])
 
 print("Deployed the reducer function")
 
@@ -163,8 +160,10 @@ print("getting all intermediate keys")
 for object in paths:
     intermediatekeys.append(object.object_name.split("/")[1])
 
-print(f"Doing {len(intermediatekeys)} reducer calls ")
-for idx, key_1 in enumerate(intermediatekeys):
+unique_keys = list(set(intermediatekeys))
+
+print(f"Doing {len(unique_keys)} reducer calls ")
+for idx, key_1 in enumerate(unique_keys):
     data = json.dumps({
         "bucketName": intermidated_buket,
         "key": str(key_1),

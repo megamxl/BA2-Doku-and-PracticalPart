@@ -3,7 +3,7 @@
   "minio-access_key" : "minioadmin",
   "minio-secret_key" : "minioadmin" ,
   "input-bath-size" :  500,
-  "bucket-prefix" : "knock",
+  "bucket-prefix" : "spin4",
   "gateway-Ip" : "127.0.0.1",
   "gateway-Port" : 3000,
   "mapFunction" : "megamaxl/customer-mapper:latest",
