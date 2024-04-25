@@ -44,7 +44,6 @@ type ChangePackageSate struct {
 }
 
 func init() {
-
 	rand.Seed(time.Now().UnixNano())
 
 	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
@@ -54,19 +53,20 @@ func init() {
 		db := pg.Open(addr)
 		defer db.Close()
 
-		red := reddis.NewClient("redis://192.168.178.109:6379/0")
+		red := reddis.NewClient("redis://192.168.178.109:6379")
 
 		if r.Method == "GET" {
-			selectByID(*db, w, r)
+			selectByID(*db, *red, w, r)
 			return
 		}
 
 		if !checkBasicAuthCreds(w, r) {
+			http.Error(w, "Not Authorized", http.StatusMethodNotAllowed)
 			return
 		}
 
 		if r.Method == "PUT" {
-			updateById(*db, w, r)
+			updateById(*db, *red, w, r)
 			return
 		}
 
@@ -135,7 +135,11 @@ func createPackage(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.
 		return
 	}
 
-	go red.Set(gen_trackingNumber, jsonData)
+	err = red.Set(gen_trackingNumber, jsonData)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	fmt.Println((time.Now().UnixNano() - start.UnixNano()) / 1000000)
 
@@ -176,13 +180,28 @@ func generateTrackingNumber() string {
 	return trackingNumber
 }
 
-func selectByID(db sql.DB, w http.ResponseWriter, r *http.Request) {
+func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Request) {
 
 	trackingNumber := r.URL.Query().Get("trackingNumber")
 	if trackingNumber == "" {
 		// If no trackingNumber is provided, return an error
 		http.Error(w, "Tracking number is required", http.StatusBadRequest)
 		return
+	}
+
+	bytes, err := red.Get(trackingNumber)
+
+	if len(bytes) > 0 {
+
+		var cahced Package
+
+		err = json.Unmarshal(bytes, &cahced)
+		if err == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			w.Write(bytes)
+			return
+		}
 	}
 
 	// Define your SQL query
@@ -216,13 +235,15 @@ func selectByID(db sql.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	red.Set(parcel.TrackingNumber, responseBytes)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(responseBytes)
 	return
 }
 
-func updateById(db sql.DB, w http.ResponseWriter, r *http.Request) {
+func updateById(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Request) {
 
 	var reqBody ChangePackageSate
 
@@ -264,7 +285,37 @@ func updateById(db sql.DB, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO update chache
+	query1 := `SELECT * FROM packages WHERE tracking_number = $1`
+
+	// Execute the query
+	row, err := db.Query(query1, reqBody.TrackingNumber)
+	if err != nil {
+		http.Error(w, "Database query error", http.StatusInternalServerError)
+		return
+	}
+	defer row.Close()
+
+	// Assuming you're reading one result, adjust as necessary for your application
+	if !row.Next() {
+		http.Error(w, "No package found with the given tracking number", http.StatusNotFound)
+		return
+	}
+
+	//TODO make DTO and do not return the whole package
+	var parcel Package
+	if err := row.Scan(&parcel.ID, &parcel.TrackingNumber, &parcel.Sender, &parcel.Recipient, &parcel.OriginAddress, &parcel.DestinationAddress, &parcel.Weight, &parcel.Status); err != nil {
+		http.Error(w, "Failed to read package data", http.StatusInternalServerError)
+		return
+	}
+
+	// Send back the package information as JSON
+	responseBytes, err := json.Marshal(parcel)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+
+	red.Set(reqBody.TrackingNumber, responseBytes)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
