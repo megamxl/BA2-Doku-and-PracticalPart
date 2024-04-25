@@ -138,7 +138,7 @@ func createPackage(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.
 	err = red.Set(gen_trackingNumber, jsonData)
 
 	if err != nil {
-		fmt.Println(err)
+		w.Header().Set("Failure", "Redis")
 	}
 
 	fmt.Println((time.Now().UnixNano() - start.UnixNano()) / 1000000)
