@@ -220,22 +220,6 @@ func selectByID(db sql.DB, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(responseBytes)
 	return
-	//rows, err := db.Query("SELECT * FROM packages where id=$1", id)
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//var packages []*Package
-	//for rows.Next() {
-	//	var parcel Package
-	//	if err := rows.Scan(&parcel.ID, &parcel.TrackingNumber, &parcel.Sender, &parcel.Recipient, &parcel.OriginAddress, &parcel.DestinationAddress, &parcel.Weight, &parcel.Status); err != nil {
-	//		fmt.Println(err)
-	//	}
-	//	packages = append(packages, &parcel)
-	//}
-	//json.NewEncoder(w).Encode(packages)
 }
 
 func updateById(db sql.DB, w http.ResponseWriter, r *http.Request) {

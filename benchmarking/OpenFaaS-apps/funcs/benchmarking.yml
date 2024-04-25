@@ -1,0 +1,22 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  matrix:
+    lang: golang-middleware
+    handler: ./matrix
+    image: megamaxl/matrix:latest
+  factor:
+    lang: golang-middleware
+    handler: ./factor
+    image: megamaxl/factor:latest
+  fibonaci:
+    lang: golang-middleware
+    handler: ./fibonaci
+    image: megamaxl/fibonaci:latest
+  latency:
+    lang: golang-middleware
+    handler: ./latency
+    image: megamaxl/latency:latest
+

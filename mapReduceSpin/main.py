@@ -4,6 +4,7 @@ import json
 import http.client
 import time
 import threading
+import requests
 
 
 with open('config.json') as config:
@@ -196,3 +197,15 @@ print("All Done Here are your statistics nows")
 print("")
 print("")
 print(f"The time elapesd between the first fuction deploy until now are {sec_between}" )
+
+
+print("The result is ")
+
+url = "http://localhost:8085/getFilesFromBucketWitPrefix?bucketName=" + output_bucket + "&key=&formatJson=true"
+
+payload = {}
+headers = {}
+
+response = requests.request("GET", url, headers=headers, data=payload)
+
+print(response.text)
