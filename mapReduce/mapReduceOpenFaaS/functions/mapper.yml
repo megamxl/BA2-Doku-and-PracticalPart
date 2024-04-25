@@ -1,0 +1,14 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  mapper1:
+    lang: golang-middleware
+    handler: ./mapper
+    image: megamaxl/customer-mapper-go-adapter:latest
+  reducer:
+    lang: golang-middleware
+    handler: ./reducer
+    image: megamaxl/customer-reducer-go-adapter:latest
+
