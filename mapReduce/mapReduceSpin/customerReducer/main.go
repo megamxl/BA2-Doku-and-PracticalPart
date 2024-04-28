@@ -51,7 +51,7 @@ func reduce(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseURL := "http://localhost:8085/getFilesFromBucketWitPrefix"
+	baseURL := "http://192.168.178.250:8085/getFilesFromBucketWitPrefix"
 
 	params := url.Values{}
 	params.Add("bucketName", cc.BucketName)
@@ -90,7 +90,7 @@ func reduce(w http.ResponseWriter, r *http.Request) {
 		amount += line.Value
 	}
 
-	baseURL = "http://localhost:8085/putObject"
+	baseURL = "http://192.168.178.250:8085/putObject"
 
 	params = url.Values{}
 	params.Add("bucketName", cc.OutputBucket)

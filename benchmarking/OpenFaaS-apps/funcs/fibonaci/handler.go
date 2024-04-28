@@ -2,9 +2,9 @@ package function
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -30,7 +30,18 @@ type Metrics struct {
 }
 
 func Handle(w http.ResponseWriter, r *http.Request) {
-	var n = 100
+	nString := r.URL.Query().Get("n")
+
+	var n int
+
+	if nString != "" {
+		atoi, err := strconv.Atoi(nString)
+		if err == nil {
+			n = atoi
+		} else {
+			n = 100
+		}
+	}
 
 	f := fibonacci()
 	start := time.Now()
@@ -60,8 +71,6 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Printf(string(js))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)

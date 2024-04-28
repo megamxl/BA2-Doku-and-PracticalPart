@@ -48,7 +48,7 @@ func getData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseURL1 := "http://localhost:8085/getObject"
+	baseURL1 := "http://192.168.178.250:8085/getObject"
 
 	params := url.Values{}
 	params.Add("bucketName", cc.BucketName)
@@ -98,7 +98,7 @@ func getData(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		baseURL := "http://localhost:8085/putObject"
+		baseURL := "http://192.168.178.250:8085/putObject"
 
 		params = url.Values{}
 		params.Add("bucketName", cc.OutputBucket)

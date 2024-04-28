@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"math"
 	"net/http"
-	"sort"
 	"strconv"
 	"time"
 
@@ -33,35 +31,38 @@ type Metrics struct {
 	Uptime     string `json:"uptime"`
 }
 
+func main() {}
+
 func init() {
 	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
 
 		nString := r.URL.Query().Get("n")
 
-		var n uint64
+		var n int
 
 		if nString != "" {
 			atoi, err := strconv.Atoi(nString)
 			if err == nil {
-				n = uint64(atoi)
+				n = atoi
 			} else {
-				n = 688834647444046
+				n = 100
 			}
 		}
 
-		//TODO overrided n to passed Value 2688834647444046
-
+		f := fibonacci()
 		start := time.Now()
-		var result []int = factors(n)
+		var result int
+		for i := 0; i < n; i++ {
+			result = f()
+		}
 		elapsed := time.Since(start)
 
 		m := Message{
 			Success: true,
 			Payload: Payload{
-				Test:   "cpu test",
-				N:      n,
-				Result: result,
-				Time:   int(elapsed / time.Millisecond),
+				Test: "matrix test",
+				N:    uint64(result),
+				Time: int(elapsed / time.Millisecond),
 			},
 			Metrics: Metrics{
 				MachineId:  "",
@@ -79,24 +80,15 @@ func init() {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(js)
+
 	})
 }
 
-func main() {}
-
-func factors(num uint64) []int {
-	var n_factors = make([]int, 0)
-	sqrtNum := uint64(math.Sqrt(float64(num))) // Cast the square root to uint64
-
-	for i := uint64(1); i <= sqrtNum; i++ {
-		if num%i == 0 {
-			n_factors = append(n_factors, int(i)) // Cast i to int before appending
-			if num/i != i {
-				n_factors = append(n_factors, int(num/i)) // Cast num/i to int before appending
-			}
-		}
+func fibonacci() func() int {
+	before, val := 0, 1
+	return func() int {
+		ret := before
+		before, val = val, before+val
+		return ret
 	}
-
-	sort.Ints(n_factors)
-	return n_factors
 }

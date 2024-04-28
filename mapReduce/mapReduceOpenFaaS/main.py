@@ -4,6 +4,7 @@ import json
 import http.client
 import time
 import threading
+import requests
 
 
 with open('config.json') as config:
@@ -89,7 +90,7 @@ with open("data.csv") as fl:
 
 star_time = time.time()
 
-mapper_function_name = "mapper"
+mapper_function_name = "mapper1"
 
 intermidated_buket = parsed_config['bucket-prefix'] + "-intermidated"
 
@@ -103,7 +104,7 @@ for idx, key_1 in enumerate(usedkeys):
         "key": str(key_1),
         "outputBucket": intermidated_buket
     })
-    if idx > 0 and idx % 5 == 0:
+    if idx > 0 and idx % 2 == 0:
         for thread in threads:
             thread.start()
 
@@ -196,7 +197,7 @@ print(f"The time elapesd between the first fuction deploy until now are {sec_bet
 
 print("The result is ")
 
-url = "http://localhost:8085/getFilesFromBucketWitPrefix?bucketName=" + output_bucket + "&key=&formatJson=true"
+url = "http://192.168.178.250:8085/getFilesFromBucketWitPrefix?bucketName=" + output_bucket + "&key=&formatJson=true"
 
 payload = {}
 headers = {}

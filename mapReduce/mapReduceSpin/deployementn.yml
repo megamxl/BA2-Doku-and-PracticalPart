@@ -1,0 +1,57 @@
+apiVersion: core.spinoperator.dev/v1alpha1
+kind: SpinApp
+metadata:
+  name: customer-mapper
+spec:
+  image: "ghcr.io/megamxl/cust-map:v1"
+  replicas: 5
+  executor: containerd-shim-spin
+---
+
+apiVersion: core.spinoperator.dev/v1alpha1
+kind: SpinApp
+metadata:
+  name: customer-reducer
+spec:
+  image: "ghcr.io/megamxl/cust-red:v1"
+  replicas: 5
+  executor: containerd-shim-spin
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /map
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-mapper
+                port:
+                  number: 80
+
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /reduce
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-reducer
+                port:
+                  number: 80

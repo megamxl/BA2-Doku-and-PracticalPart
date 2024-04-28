@@ -45,7 +45,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseURL := "http://host.docker.internal:8085/getFilesFromBucketWitPrefix"
+	baseURL := "http://192.168.178.250:8085/getFilesFromBucketWitPrefix"
 
 	params := url.Values{}
 	params.Add("bucketName", cc.BucketName)
@@ -84,7 +84,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		amount += line.Value
 	}
 
-	baseURL = "http://host.docker.internal:8085/putObject"
+	baseURL = "http://192.168.178.250:8085/putObject"
 
 	params = url.Values{}
 	params.Add("bucketName", cc.OutputBucket)

@@ -2,11 +2,11 @@ package function
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -33,8 +33,18 @@ type Metrics struct {
 
 func Handle(w http.ResponseWriter, r *http.Request) {
 	//TODO overrided n to passed Value 2688834647444046
-	var n uint64 = 2688834647444046
+	nString := r.URL.Query().Get("n")
 
+	var n uint64
+
+	if nString != "" {
+		atoi, err := strconv.Atoi(nString)
+		if err == nil {
+			n = uint64(atoi)
+		} else {
+			n = 688834647444046
+		}
+	}
 	start := time.Now()
 	var result []int = factors(n)
 	elapsed := time.Since(start)
@@ -60,8 +70,6 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Printf(string(js))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)

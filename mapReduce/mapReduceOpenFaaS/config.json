@@ -1,9 +1,9 @@
 {
-    "minio-enpoint" : "localhost:9000",
+    "minio-enpoint" : "192.168.178.250:9000",
     "minio-access_key" : "minioadmin",
     "minio-secret_key" : "minioadmin" ,
     "input-bath-size" :  500,
-    "bucket-prefix" : "openfaas2",
+    "bucket-prefix" : "openfaas3",
     "gateway-Ip" : "localhost",
     "gateway-Port" : 8080,
     "mapFunction" : "megamaxl/customer-mapper:latest",

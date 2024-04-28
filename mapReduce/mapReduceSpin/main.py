@@ -118,7 +118,7 @@ for idx, key_1 in enumerate(usedkeys):
         threads.clear()
         print("")
 
-    thread = threading.Thread(target=invoke_a_function, args=(parsed_config['gateway-Ip'], 3001, mapper_function_name, data,))
+    thread = threading.Thread(target=invoke_a_function, args=(parsed_config['gateway-Ip'], 3000, mapper_function_name, data,))
     threads.append(thread)
 
 for thread in threads:
@@ -180,7 +180,7 @@ for idx, key_1 in enumerate(unique_keys):
 
         threads.clear()
 
-    thread = threading.Thread(target=invoke_a_function, args=(parsed_config['gateway-Ip'], parsed_config['gateway-Port'], reducer_function_name, data,))
+    thread = threading.Thread(target=invoke_a_function, args=(parsed_config['gateway-Ip'], 3001, reducer_function_name, data,))
     threads.append(thread)
 
 print(f"there were {len(failed_req)} failed request doing them again")
@@ -201,7 +201,7 @@ print(f"The time elapesd between the first fuction deploy until now are {sec_bet
 
 print("The result is ")
 
-url = "http://localhost:8085/getFilesFromBucketWitPrefix?bucketName=" + output_bucket + "&key=&formatJson=true"
+url = "http://192.168.178.250:8085/getFilesFromBucketWitPrefix?bucketName=" + output_bucket + "&key=&formatJson=true"
 
 payload = {}
 headers = {}

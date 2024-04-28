@@ -1,13 +1,14 @@
 apiVersion: core.spinoperator.dev/v1alpha1
 kind: SpinApp
 metadata:
-  name: post-spin-app
+  name: benchmark-spin
 spec:
-  image: "ghcr.io/megamxl/post:v2"
-  replicas: 5
+  image: "ghcr.io/megamxl/benchmarking:v1"
+  replicas: 10
   executor: containerd-shim-spin
 
 ---
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -18,10 +19,10 @@ spec:
   rules:
     - http:
         paths:
-          - path: /post
+          - path: /
             pathType: Prefix
             backend:
               service:
-                name: post-spin-app
+                name: benchmark-spin
                 port:
                   number: 80

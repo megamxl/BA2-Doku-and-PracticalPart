@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	spinhttp "github.com/fermyon/spin/sdk/go/v2/http"
@@ -18,10 +18,10 @@ type Message struct {
 }
 
 type Payload struct {
-	Test   string `json:"test"`
-	N      uint64 `json:"n"`
-	Result []int  `json:"result"`
-	Time   int    `json:"time"`
+	Test   string  `json:"test"`
+	N      uint64  `json:"n"`
+	Result [][]int `json:"result"`
+	Time   int     `json:"time"`
 }
 
 type Metrics struct {
@@ -38,18 +38,30 @@ func init() {
 	spinhttp.Handle(func(w http.ResponseWriter, r *http.Request) {
 
 		//TODO overrided n to passed Value 2688834647444046
-		var n = 100
+		nString := r.URL.Query().Get("n")
+
+		var n int
+
+		if nString != "" {
+			atoi, err := strconv.Atoi(nString)
+			if err == nil {
+				n = atoi
+			} else {
+				n = 100
+			}
+		}
 
 		start := time.Now()
-		matrix(n)
+		res := matrix(n)
 		elapsed := time.Since(start)
 
 		m := Message{
 			Success: true,
 			Payload: Payload{
-				Test: "matrix test",
-				N:    uint64(n),
-				Time: int(elapsed / time.Millisecond),
+				Test:   "matrix test",
+				N:      uint64(n),
+				Result: res,
+				Time:   int(elapsed / time.Millisecond),
 			},
 			Metrics: Metrics{
 				MachineId:  "",
@@ -64,8 +76,6 @@ func init() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		fmt.Printf(string(js))
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(js)
