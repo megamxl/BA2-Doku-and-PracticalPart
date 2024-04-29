@@ -43,6 +43,17 @@ type ChangePackageSate struct {
 	Status         string `json:"status"`
 }
 
+type Metrics struct {
+	Redis    int64 `json:"redis"`
+	Postgres int64 `json:"postgres"`
+	Overall  int64 `json:"overall"`
+}
+
+type RESP[T any] struct {
+	Body    T       `json:"body"`
+	Metrics Metrics `json:"metrics"`
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -104,12 +115,16 @@ func createPackage(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.
 	// address of the Mysql server.
 	gen_trackingNumber := generateTrackingNumber()
 
+	start_postgeress := time.Now()
+
 	query := `INSERT INTO packages ( tracking_number, sender, recipient, origin_address, destination_address, weight, status) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	_, err = db.Exec(query, gen_trackingNumber, reqBody.Sender, reqBody.Recipient, reqBody.OriginAddress, reqBody.DestinationAddress, reqBody.Weight, "Data Received")
 	if err != nil {
 		http.Error(w, "Cant create Package due to SQL Problem", http.StatusInternalServerError)
 		return
 	}
+
+	needed_postgresss := time.Now().Sub(start_postgeress).Milliseconds()
 
 	data := map[string]interface{}{
 		"trackingNumber":     gen_trackingNumber,
@@ -126,14 +141,7 @@ func createPackage(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.
 		log.Fatalf("Error marshalling data: %v", err)
 	}
 
-	response := ApiResponse{
-		TrackingNumber: gen_trackingNumber,
-	}
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-		return
-	}
+	redtime_start := time.Now()
 
 	err = red.Set(gen_trackingNumber, jsonData)
 
@@ -141,7 +149,28 @@ func createPackage(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.
 		w.Header().Set("Failure", "Redis")
 	}
 
-	fmt.Println((time.Now().UnixNano() - start.UnixNano()) / 1000000)
+	nedded_red := time.Now().Sub(redtime_start).Milliseconds()
+
+	response1 := ApiResponse{
+		TrackingNumber: gen_trackingNumber,
+	}
+
+	response2 := Metrics{
+		Redis:    nedded_red,
+		Postgres: needed_postgresss,
+		Overall:  time.Now().Sub(start).Microseconds(),
+	}
+
+	response := RESP[ApiResponse]{
+		Body:    response1,
+		Metrics: response2,
+	}
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(220)
@@ -182,6 +211,8 @@ func generateTrackingNumber() string {
 
 func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Request) {
 
+	start := time.Now()
+
 	trackingNumber := r.URL.Query().Get("trackingNumber")
 	if trackingNumber == "" {
 		// If no trackingNumber is provided, return an error
@@ -189,7 +220,11 @@ func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	start_red := time.Now()
+
 	bytes, err := red.Get(trackingNumber)
+
+	neede_red := time.Now().Sub(start_red).Milliseconds()
 
 	if len(bytes) > 0 {
 
@@ -197,15 +232,35 @@ func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 
 		err = json.Unmarshal(bytes, &cahced)
 		if err == nil {
+
+			response2 := Metrics{
+				Redis:    neede_red,
+				Postgres: 0,
+				Overall:  time.Now().Sub(start).Microseconds(),
+			}
+
+			response := RESP[Package]{
+				Body:    cahced,
+				Metrics: response2,
+			}
+
+			responseBytes, err := json.Marshal(response)
+			if err != nil {
+				http.Error(w, "Error encoding response", http.StatusInternalServerError)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
-			w.Write(bytes)
+			w.Write(responseBytes)
 			return
 		}
 	}
 
 	// Define your SQL query
 	query := `SELECT * FROM packages WHERE tracking_number = $1`
+
+	pg_start := time.Now()
 
 	// Execute the query
 	row, err := db.Query(query, trackingNumber)
@@ -214,6 +269,8 @@ func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 		return
 	}
 	defer row.Close()
+
+	pg_end := time.Now().Sub(pg_start).Milliseconds()
 
 	// Assuming you're reading one result, adjust as necessary for your application
 	if !row.Next() {
@@ -237,6 +294,23 @@ func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 
 	red.Set(parcel.TrackingNumber, responseBytes)
 
+	response2 := Metrics{
+		Redis:    neede_red,
+		Postgres: pg_end,
+		Overall:  time.Now().Sub(start).Microseconds(),
+	}
+
+	response := RESP[Package]{
+		Body:    parcel,
+		Metrics: response2,
+	}
+
+	responseBytes, err = json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(responseBytes)
@@ -244,6 +318,8 @@ func selectByID(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 }
 
 func updateById(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Request) {
+
+	start := time.Now()
 
 	var reqBody ChangePackageSate
 
@@ -267,12 +343,16 @@ func updateById(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 
 	query := "UPDATE packages SET status = $1 WHERE tracking_number = $2"
 
+	pg_start := time.Now()
+
 	ret, err := db.Exec(query, reqBody.Status, reqBody.TrackingNumber)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Cant update Package state due to SQL Problem", http.StatusInternalServerError)
 		return
 	}
+
+	pg_end := time.Now().Sub(pg_start).Milliseconds()
 
 	affected, err := ret.RowsAffected()
 	if err != nil {
@@ -315,9 +395,33 @@ func updateById(db sql.DB, red reddis.Client, w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	red_start := time.Now()
+
 	red.Set(reqBody.TrackingNumber, responseBytes)
 
+	end_red := time.Now().Sub(red_start).Milliseconds()
+
+	tr := ApiResponse{TrackingNumber: reqBody.TrackingNumber}
+
+	response2 := Metrics{
+		Redis:    end_red,
+		Postgres: pg_end,
+		Overall:  time.Now().Sub(start).Microseconds(),
+	}
+
+	response := RESP[ApiResponse]{
+		Body:    tr,
+		Metrics: response2,
+	}
+
+	responseBytes, err = json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
+	w.Write(responseBytes)
 	w.WriteHeader(http.StatusOK)
 }
 
